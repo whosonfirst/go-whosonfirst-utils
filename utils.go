@@ -1,6 +1,9 @@
 package utils
 
 import (
+        "crypto/md5"
+	"encoding/hex"
+	"io/ioutil"
 	"path"
 	"strconv"
 	"strings"
@@ -52,4 +55,18 @@ func Id2AbsPath(root string, id int) (abs_path string) {
 	abs_path = path.Join(root, rel)
 
 	return abs_path
+}
+
+func HashFile(path string) (string, error) {
+
+	body, err := ioutil.ReadFile(path)
+
+	if err != nil {
+		return "", err
+	}
+
+	hash := md5.Sum(body)
+	str_hash := hex.EncodeToString(hash[:])
+
+	return str_hash, nil
 }

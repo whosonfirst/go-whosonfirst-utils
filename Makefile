@@ -13,4 +13,7 @@ fmt:	self
 expand: self
 	go build -o bin/wof-expand cmd/wof-expand.go
 
-bin:	expand
+hash: self
+	go build -o bin/wof-hash cmd/wof-hash.go
+
+bin:	expand hash
