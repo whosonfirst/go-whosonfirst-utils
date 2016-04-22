@@ -6,6 +6,13 @@ self:   prep
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-utils
 	cp utils.go src/github.com/whosonfirst/go-whosonfirst-utils/utils.go
 
+deps:	self
+
+rmdeps:
+	if test -d src; then rm -rf src; fi 
+
+build:	rmdeps deps fmt bin
+
 fmt:	self
 	go fmt utils.go
 	go fmt cmd/*.go
@@ -13,7 +20,6 @@ fmt:	self
 expand: self
 	go build -o bin/wof-expand cmd/wof-expand.go
 
-hash: self
-	go build -o bin/wof-hash cmd/wof-hash.go
-
-bin:	expand hash
+bin:
+	@GOPATH=$(shell pwd) go build -o bin/wof-expand cmd/wof-expand.go
+	@GOPATH=$(shell pwd) go build -o bin/wof-hash cmd/wof-hash.go

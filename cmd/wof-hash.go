@@ -11,11 +11,11 @@ import (
 
 func main() {
 
-     flag.Parse()
-     args := flag.Args()
+	flag.Parse()
+	args := flag.Args()
 
-     for _, path := range args {
-     	 hash, _ := utils.HashFile(path)
-	 fmt.Println(hash)
-     }
+	for _, path := range args {
+		hash, _ := utils.HashFile(path)
+		fmt.Println(hash)
+	}
 }

@@ -1,7 +1,7 @@
 package utils
 
 import (
-        "crypto/md5"
+	"crypto/md5"
 	"encoding/hex"
 	"io/ioutil"
 	"path"
