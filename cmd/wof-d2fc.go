@@ -21,7 +21,7 @@ type FeatureCollection struct {
 
 func main() {
 
-	var repo = flag.String("repo", "", "...")
+	var repo = flag.String("repo", "", "The path to the repository where the files you're passing to d2fc are stored.")
 	flag.Parse()
 
 	collection := make([]interface{}, 0)
@@ -31,6 +31,7 @@ func main() {
 	for scanner.Scan() {
 
 		ln := scanner.Text()
+
 		rel_path := strings.TrimSpace(ln)
 		abs_path := filepath.Join(*repo, rel_path)
 
@@ -85,5 +86,4 @@ func main() {
 
 	writer.Write(b)
 	writer.Flush()
-
 }
