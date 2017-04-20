@@ -5,7 +5,9 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"flag"
+	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-csv"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io/ioutil"
@@ -42,7 +44,7 @@ func HashId(wofid int64, sources map[string]string) (map[string]string, error) {
 			mu.Lock()
 
 			if err != nil {
-				log.Println(src, err)
+				fmt.Fprintf(os.Stderr, "failed to hash WOF ID %s%s because %s\n", root, rel_path, err)
 				hashes[src] = ""
 			} else {
 				hashes[src] = hash
@@ -69,6 +71,10 @@ func HashRecord(root string, rel_path string) (string, error) {
 	}
 
 	defer rsp.Body.Close()
+
+	if rsp.StatusCode != 200 {
+		return "", errors.New(rsp.Status)
+	}
 
 	body, err := ioutil.ReadAll(rsp.Body)
 
