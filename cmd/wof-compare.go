@@ -174,9 +174,13 @@ func main() {
 				log.Fatal(err)
 			}
 
-			// to do: try and get repo name from path
+			repo, err := uri.RepoFromPath(path)
 
-			w := NewWOFId(wofid, "")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "unable to determine repo from path for WOF ID %d (%s) because %s\n", wofid, path, err)
+			}
+
+			w := NewWOFId(wofid, repo)
 			wofids = append(wofids, w)
 		}
 

@@ -15,9 +15,13 @@ Usage of ./bin/wof-compare:
 
 Compare one or more Who's On First documents against multiple sources, reading IDs from the command line or a "file list" document. Current sources are:
 
-* wof _https://whosonfirst.mapzen.com/data/_
-* github _https://raw.githubusercontent.com/whosonfirst-data/whosonfirst-data/master/data/_
-* s3 _https://s3.amazonaws.com/whosonfirst.mapzen.com/data/_
+| Source | URI | Notes |
+| :--- | :--- | :--- |
+| `wof` | https://whosonfirst.mapzen.com/data/ | |
+| `github` | https://raw.githubusercontent.com/:REPO:/whosonfirst-data/master/data/ | the `:REPO:` bit is discussed below |
+| `s3` | https://s3.amazonaws.com/whosonfirst.mapzen.com/data/ | |
+
+_It is not possible to compare local files on disk. Yet._
 
 For example:
 
@@ -31,7 +35,7 @@ wofid,match,github,wof,s3
 You can also pass a "file list" document which is pretty much what it sounds like: A list of WOF documents, one per line. For example here is how you might generate a file list for all the descendants of Helsinki using the [wof-api](https://github.com/whosonfirst/go-whosonfirst-api#wof-api) tool:
 
 ```
-./bin/wof-api -param method=whosonfirst.places.getDescendants -param id=101748417 -param api_key=mapzen-xxxxxx -filelist -filelist-prefix /usr/local/data/whosonfirst-data/data -paginated 
+./bin/wof-api -param method=whosonfirst.places.getDescendants -param id=101748417 -param api_key=mapzen-xxxxxx -filelist -filelist-prefix /usr/local/data/:REPO:/data -paginated 
 /usr/local/data/whosonfirst-data/data/858/988/21/85898821.geojson
 /usr/local/data/whosonfirst-data/data/858/988/25/85898825.geojson
 /usr/local/data/whosonfirst-data/data/858/988/37/85898837.geojson
@@ -49,7 +53,7 @@ You can also pass a "file list" document which is pretty much what it sounds lik
 ... and so on
 ```
 
-Let's imagine you wrote those results to a file called `helsinki.txt`. You can compare all the WOF IDs listed like this:
+Now, let's imagine you wrote those results to a file called `helsinki.txt`. You can compare all the WOF IDs listed like this:
 
 ```
 ./bin/wof-compare -filelist helsinki.txt 
@@ -74,9 +78,11 @@ wofid,match,github,s3,wof
 ... and so on
 ```
 
-#### Caveats
+#### Important
 
-* See the way one of the sources is `https://raw.githubusercontent.com/whosonfirst-data/whosonfirst-data/master/data/`. That means if a WOF ID is part of a _different_ repo (say `whosonfirst-data-venue-fi`) it won't be able to be found so the comparison will always fail. We should figure out how to fix that, but today we can't. One way would to be allow query results against the [Who's On First API](https://mapzen.com/documentation/wof) to be filtered by `wof:repo` but again that's not possible today... 
+Do you see the way we're pasing "/usr/local/data/:REPO:/data" to the `-filelist-prefix` flag in the example above? That's important. The [wof-api](https://github.com/whosonfirst/go-whosonfirst-api#wof-api) tool's "file list" writer will replace the string `:REPO:` with the actual `wof:repo` returned by the API when it's generating the file list.
+
+Similarly, the default URI for the `github` source is `https://raw.githubusercontent.com/:REPO:/whosonfirst-data/master/data/`. When processing file list documents the code will try to determine the repo name from a path and replacing `:REPO:` accordingly. If no repo can be determined then `whosonfirst-data` will be assumed.
 
 ### wof-d2fc
 
