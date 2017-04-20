@@ -15,12 +15,34 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 )
 
-func HashId(wofid int64, sources map[string]string) (map[string]string, error) {
+type WOFId struct {
+	Id   int64
+	Repo string
+}
+
+func NewWOFId(id int64, repo string) *WOFId {
+
+	if repo == "" {
+		repo = "whosonfirst-data"
+	}
+
+	w := WOFId{
+		Id:   id,
+		Repo: repo,
+	}
+
+	return &w
+}
+
+func HashWOFId(w *WOFId, sources map[string]string) (map[string]string, error) {
 
 	hashes := make(map[string]string)
+
+	wofid := w.Id
 
 	rel_path, err := uri.Id2RelPath(int(wofid)) // OH GOD FIX ME...
 
@@ -32,6 +54,10 @@ func HashId(wofid int64, sources map[string]string) (map[string]string, error) {
 	mu := new(sync.Mutex)
 
 	for src, root := range sources {
+
+		if src == "github" {
+			root = strings.Replace(root, ":REPO:", w.Repo, -1)
+		}
 
 		wg.Add(1)
 
@@ -125,7 +151,7 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 
-	wofids := make([]int64, 0)
+	wofids := make([]*WOFId, 0)
 
 	if *filelist {
 
@@ -148,7 +174,10 @@ func main() {
 				log.Fatal(err)
 			}
 
-			wofids = append(wofids, wofid)
+			// to do: try and get repo name from path
+
+			w := NewWOFId(wofid, "")
+			wofids = append(wofids, w)
 		}
 
 	} else {
@@ -161,7 +190,8 @@ func main() {
 				log.Fatal(err)
 			}
 
-			wofids = append(wofids, wofid)
+			w := NewWOFId(wofid, "")
+			wofids = append(wofids, w)
 		}
 	}
 
@@ -171,15 +201,15 @@ func main() {
 
 	sources := map[string]string{
 		"wof":    "https://whosonfirst.mapzen.com/data/",
-		"github": "https://raw.githubusercontent.com/whosonfirst-data/whosonfirst-data/master/data/",
+		"github": "https://raw.githubusercontent.com/whosonfirst-data/:REPO:/master/data/",
 		"s3":     "https://s3.amazonaws.com/whosonfirst.mapzen.com/data/",
 	}
 
 	var writer *csv.DictWriter
 
-	for _, wofid := range wofids {
+	for _, w := range wofids {
 
-		hashes, err := HashId(wofid, sources)
+		hashes, err := HashWOFId(w, sources)
 
 		if err != nil {
 			log.Fatal(err)
@@ -192,7 +222,7 @@ func main() {
 		}
 
 		out := map[string]string{
-			"wofid": strconv.FormatInt(wofid, 10),
+			"wofid": strconv.FormatInt(w.Id, 10),
 			"match": match,
 		}
 
