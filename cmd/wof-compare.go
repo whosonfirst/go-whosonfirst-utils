@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -19,7 +20,7 @@ func HashId(wofid int64, sources map[string]string) (map[string]string, error) {
 
 	hashes := make(map[string]string)
 
-	rel_path, err := uri.Id2RelPath(int(wofid))	// OH GOD FIX ME...
+	rel_path, err := uri.Id2RelPath(int(wofid)) // OH GOD FIX ME...
 
 	if err != nil {
 		return hashes, err
@@ -113,23 +114,49 @@ func CompareHashes(hashes map[string]string) bool {
 
 func main() {
 
-	// wofid := flag.Int64("wofid", 0, "A valid WOF ID")
+	filelist := flag.Bool("filelist", false, "Read WOF IDs from a \"file list\" document.")
 
 	flag.Parse()
+	args := flag.Args()
 
 	wofids := make([]int64, 0)
 
-	args := flag.Args()
+	if *filelist {
 
-	for _, id := range args {
-
-		wofid, err := strconv.ParseInt(id, 10, 64)
+		fh, err := os.Open(args[0])
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		wofids = append(wofids, wofid)
+		defer fh.Close()
+
+		scanner := bufio.NewScanner(fh)
+
+		for scanner.Scan() {
+
+			path := scanner.Text()
+			wofid, err := uri.IdFromPath(path)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			wofids = append(wofids, wofid)
+		}
+
+	} else {
+
+		for _, id := range args {
+
+			wofid, err := strconv.ParseInt(id, 10, 64)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			wofids = append(wofids, wofid)
+		}
 	}
 
 	if len(wofids) == 0 {
