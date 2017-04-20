@@ -11,6 +11,7 @@ self:   prep
 	cp -r vendor/src/* src/
 
 deps:	
+	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-csv"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-uri"
 
 rmdeps:
@@ -33,3 +34,4 @@ bin:	self
 	@GOPATH=$(shell pwd) go build -o bin/wof-d2fc cmd/wof-d2fc.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-expand cmd/wof-expand.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-hash cmd/wof-hash.go
+	@GOPATH=$(shell pwd) go build -o bin/wof-compare cmd/wof-compare.go
