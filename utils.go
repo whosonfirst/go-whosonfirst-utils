@@ -48,6 +48,26 @@ func HashGeomFromFeature(feature []byte) (string, error) {
 	return hash, nil
 }
 
+func HashFromJSON(raw []byte) (string, error) {
+
+	var geom interface{}
+
+	err := json.Unmarshal(raw, &geom)
+
+	if err != nil {
+		return "", err
+	}
+
+	body, err := json.Marshal(geom)
+
+	if err != nil {
+		return "", err
+	}
+
+	hash := HashBytes(body)
+	return hash, nil
+}
+
 func HashBytes(body []byte) string {
 
 	hash := md5.Sum(body)

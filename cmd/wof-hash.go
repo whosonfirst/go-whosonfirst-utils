@@ -6,8 +6,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"github.com/whosonfirst/go-whosonfirst-utils"
+	"log"
 )
 
 func main() {
