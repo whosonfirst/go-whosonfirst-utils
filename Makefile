@@ -32,7 +32,8 @@ fmt:	self
 	go fmt cmd/*.go
 
 bin:	self
+	@GOPATH=$(shell pwd) go build -o bin/wof-cat cmd/wof-cat.go
+	@GOPATH=$(shell pwd) go build -o bin/wof-compare cmd/wof-compare.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-d2fc cmd/wof-d2fc.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-expand cmd/wof-expand.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-hash cmd/wof-hash.go
-	@GOPATH=$(shell pwd) go build -o bin/wof-compare cmd/wof-compare.go
