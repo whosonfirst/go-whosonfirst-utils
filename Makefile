@@ -12,6 +12,7 @@ self:   prep
 
 deps:	
 	@GOPATH=$(GOPATH) go get -u "github.com/tidwall/gjson"
+	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-crawl"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-csv"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-uri"
 
@@ -35,5 +36,6 @@ bin:	self
 	@GOPATH=$(shell pwd) go build -o bin/wof-cat cmd/wof-cat.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-compare cmd/wof-compare.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-d2fc cmd/wof-d2fc.go
+	@GOPATH=$(shell pwd) go build -o bin/wof-ensure-property cmd/wof-ensure-property.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-expand cmd/wof-expand.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-hash cmd/wof-hash.go

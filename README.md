@@ -168,6 +168,43 @@ $> git diff --name-only HEAD..01a6fdd25b7de2d3da7aa2f53f4f44a7efe81c47 | /usr/lo
 
 It is left to users to filter out any non-GeoJSON files from the list passed to `wof-d2fc`.
 
+### wof-ensure-property
+
+Crawl a WOF repo reporting any files that are missing a given property.
+
+```
+./bin/wof-ensure-property -h
+Usage of ./bin/wof-ensure-property:
+  -processes int
+    	The number of concurrent processes to use (default 16)
+  -property string
+    	The dotted notation for the property whose existence you want to test.
+  -repo string
+    	The WOF repo whose files you want to test. (default "/usr/local/data/whosonfirst-data")
+```
+
+For example:
+
+```
+./bin/wof-ensure-property -processes 64 -property wof:parent_id -repo /usr/local/data/whosonfirst-data
+id,path,details
+1108810255,/usr/local/data/whosonfirst-data/data/110/881/025/5/1108810255.geojson,missing 'properties.wof:parent_id'
+1108803081,/usr/local/data/whosonfirst-data/data/110/880/308/1/1108803081.geojson,missing 'properties.wof:parent_id'
+1108803083,/usr/local/data/whosonfirst-data/data/110/880/308/3/1108803083.geojson,missing 'properties.wof:parent_id'
+1108803089,/usr/local/data/whosonfirst-data/data/110/880/308/9/1108803089.geojson,missing 'properties.wof:parent_id'
+1108803101,/usr/local/data/whosonfirst-data/data/110/880/310/1/1108803101.geojson,missing 'properties.wof:parent_id'
+1108803107,/usr/local/data/whosonfirst-data/data/110/880/310/7/1108803107.geojson,missing 'properties.wof:parent_id'
+
+... and so on
+```
+
+#### Caveats
+
+As of this writing `wof-ensure-property` will:
+
+* skip "alt" files
+* only check for the existence of a property; it will not evaluate its value
+
 ### wof-expand
 
 Expand one or more Who's On First IDs to their absolute paths and print them to `STDOUT`.
