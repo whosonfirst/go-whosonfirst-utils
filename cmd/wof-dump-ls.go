@@ -15,8 +15,8 @@ import (
 
 func main() {
 
-	exclude_deprecated := flag.Bool("exclude-deprecated", false, "...")
-	exclude_superseded := flag.Bool("exclude-superseded", false, "...")
+	exclude_deprecated := flag.Bool("exclude-deprecated", false, "Exclude records that have been deprecated.")
+	exclude_superseded := flag.Bool("exclude-superseded", false, "Exclude records that have been superseded.")
 
 	procs := flag.Int("processes", runtime.NumCPU()*2, "The number of concurrent processes to use")
 

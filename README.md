@@ -168,6 +168,27 @@ $> git diff --name-only HEAD..01a6fdd25b7de2d3da7aa2f53f4f44a7efe81c47 | /usr/lo
 
 It is left to users to filter out any non-GeoJSON files from the list passed to `wof-d2fc`.
 
+### wof-dump-ls
+
+Dump one or more directories containing Who's On First documents as line-separated (encoded) JSON.
+
+```
+./bin/wof-dump-ls -h
+Usage of ./bin/wof-dump-ls:
+  -exclude-deprecated
+  Exclude records that have been deprecated.
+  -exclude-superseded
+  Exclude records that have been superseded.
+  -processes int
+  The number of concurrent processes to use (default 16)
+```
+
+For example:
+
+```
+./bin/wof-dump-ls --exclude-deprecated --exclude-superseded /usr/local/data/whosonfirst-data-venue-* > /tmp/venues-all.txt
+```
+
 ### wof-ensure-property
 
 Crawl a WOF repo reporting any files that are missing a given property.
