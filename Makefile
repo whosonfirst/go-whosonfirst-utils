@@ -36,6 +36,7 @@ bin:	self
 	@GOPATH=$(shell pwd) go build -o bin/wof-cat cmd/wof-cat.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-compare cmd/wof-compare.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-d2fc cmd/wof-d2fc.go
+	@GOPATH=$(shell pwd) go build -o bin/wof-dump-ls cmd/wof-dump-ls.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-ensure-property cmd/wof-ensure-property.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-expand cmd/wof-expand.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-hash cmd/wof-hash.go
