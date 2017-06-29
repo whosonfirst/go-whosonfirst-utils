@@ -184,13 +184,17 @@ Dump one or more directories containing Who's On First documents as line-separat
 
 ```
 ./bin/wof-geojsonls-dump -h
-Usage of ./bin/wof-dump-ls:
+Usage of ./bin/wof-geojsonls-dump:
   -exclude-deprecated
-  Exclude records that have been deprecated.
+    	Exclude records that have been deprecated.
   -exclude-superseded
-  Exclude records that have been superseded.
+    	Exclude records that have been superseded.
+  -out string
+    	Where to write records (default is STDOUT)
   -processes int
-  The number of concurrent processes to use (default 16)
+    	The number of concurrent processes to use (default 16)
+  -timings
+    	Print timings
 ```
 
 For example:
