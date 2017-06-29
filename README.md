@@ -178,12 +178,12 @@ $> git diff --name-only HEAD..01a6fdd25b7de2d3da7aa2f53f4f44a7efe81c47 | /usr/lo
 
 It is left to users to filter out any non-GeoJSON files from the list passed to `wof-d2fc`.
 
-### wof-dump-ls
+### wof-geojsonls-dump
 
-Dump one or more directories containing Who's On First documents as line-separated (encoded) JSON.
+Dump one or more directories containing Who's On First documents as line-separated (encoded) GeoJSON.
 
 ```
-./bin/wof-dump-ls -h
+./bin/wof-geojsonls-dump -h
 Usage of ./bin/wof-dump-ls:
   -exclude-deprecated
   Exclude records that have been deprecated.
@@ -196,8 +196,32 @@ Usage of ./bin/wof-dump-ls:
 For example:
 
 ```
-./bin/wof-dump-ls --exclude-deprecated --exclude-superseded /usr/local/data/whosonfirst-data-venue-* > /tmp/venues-all.txt
+./bin/wof-geojsonls-dump --exclude-deprecated --exclude-superseded /usr/local/data/whosonfirst-data-venue-* > /tmp/venues-all.txt
 ```
+
+### wof-geojsonls-validate
+
+Ensure that all the records in a GeoJSON LS dump are valid JSON.
+
+```
+./bin/wof-geojsonls-validate -h
+Usage of ./bin/wof-geojsonls-validate:
+  -processes int
+    	The number of concurrent processes to use (default 16)
+  -stats
+    	Be chatty, with counts and stuff
+  -strict
+    	Whether or not to trigger a fatal error when invalid JSON is encountered
+```
+
+For example:
+
+```
+./bin/wof-geojsonls-validate -processes 128 -stats -strict /usr/local/data-ext/venues/venues-20170628.txt
+2017/06/29 16:31:37 /usr/local/data-ext/venues/venues-20170628.txt 21650210 records processed in 17m14.809141146s
+```
+
+_Note that we are only checking that each line can be successfully parsed as JSON and not validating any GeoJSON related specifics._
 
 ### wof-ensure-property
 
