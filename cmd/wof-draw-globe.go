@@ -5,10 +5,11 @@ import (
 	"github.com/mmcloughlin/globe"
 	"github.com/whosonfirst/go-whosonfirst-csv"
 	"image/color"
-	"io"		
+	"io"
 	"log"
 	"strconv"
-	"time"		
+	"strings"
+	"time"
 )
 
 func main() {
@@ -17,17 +18,38 @@ func main() {
 	size := flag.Int("size", 1600, "The size of the globe (in pixels)")
 	// mode := flag.String("mode", "meta", "... (default is 'meta' for one or more meta files)")
 
+	center := flag.String("center", "", "")
 	center_lat := flag.Float64("latitude", 37.755244, "")
-	center_lon := flag.Float64("longitude", -122.447777, "")	
-	
+	center_lon := flag.Float64("longitude", -122.447777, "")
+
 	flag.Parse()
+
+	if *center != "" {
+
+		latlon := strings.Split(*center, ",")
+
+		lat, err := strconv.ParseFloat(latlon[0], 64)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		lon, err := strconv.ParseFloat(latlon[1], 64)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		*center_lat = lat
+		*center_lon = lon
+	}
 
 	green := color.NRGBA{0x00, 0x64, 0x3c, 192}
 	g := globe.New()
 	g.DrawGraticule(10.0)
 
 	t1 := time.Now()
-	
+
 	for _, path := range flag.Args() {
 
 		reader, err := csv.NewDictReaderFromPath(path)
@@ -44,7 +66,8 @@ func main() {
 			}
 
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err, path)
+				break
 			}
 
 			str_lat, ok := row["geom_latitude"]
@@ -67,7 +90,7 @@ func main() {
 			}
 
 			lon, err := strconv.ParseFloat(str_lon, 64)
-			
+
 			if err != nil {
 				log.Println(err, str_lon)
 				continue
@@ -82,14 +105,14 @@ func main() {
 	log.Printf("time to read all the things %v\n", t2)
 
 	t3 := time.Now()
-	
+
 	g.CenterOn(*center_lat, *center_lon)
 	err := g.SavePNG(*outfile, *size)
 
 	t4 := time.Since(t3)
 
 	log.Printf("time to draw all the things %v\n", t4)
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
