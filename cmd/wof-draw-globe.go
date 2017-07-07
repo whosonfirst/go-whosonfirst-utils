@@ -4,15 +4,16 @@ import (
 	"errors"
 	"flag"
 	"github.com/tidwall/gjson"
+	"github.com/whosonfirst/globe" // for to make DrawPreparedPaths public
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-csv"
-	"github.com/whosonfirst/globe"			// for to make DrawPreparedPaths public
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"image/color"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -42,8 +43,8 @@ func DrawFeature(feature []byte, gl *globe.Globe) error {
 		lon := lonlat[0].Float()
 
 		gl.DrawDot(lat, lon, 0.01, globe.Color(green))
-		*/
-		
+	*/
+
 	case "Polygon":
 
 		paths := make([][]*globe.Point, 0)
@@ -51,7 +52,7 @@ func DrawFeature(feature []byte, gl *globe.Globe) error {
 		for _, ring := range coords.Array() {
 
 			path := make([]*globe.Point, 0)
-			
+
 			for _, r := range ring.Array() {
 
 				lonlat := r.Array()
@@ -59,14 +60,14 @@ func DrawFeature(feature []byte, gl *globe.Globe) error {
 				lon := lonlat[0].Float()
 
 				pt := globe.NewPoint(lat, lon)
-				path = append(path, &pt) 
+				path = append(path, &pt)
 			}
 
 			paths = append(paths, path)
 		}
 
 		gl.DrawPaths(paths)
-		
+
 	case "MultiPolygon":
 		// log.Println("Can't process MultiPolygon")
 
@@ -77,11 +78,51 @@ func DrawFeature(feature []byte, gl *globe.Globe) error {
 	return nil
 }
 
+func DrawRow(path string, row map[string]string, g *globe.Globe, throttle chan bool) error {
+
+	<-throttle
+
+	defer func() {
+		throttle <- true
+	}()
+
+	rel_path, ok := row["path"]
+
+	if !ok {
+		log.Println("Missing path")
+		return nil
+	}
+
+	meta := filepath.Dir(path)
+	root := filepath.Dir(meta)
+	data := filepath.Join(root, "data")
+
+	abs_path := filepath.Join(data, rel_path)
+
+	fh, err := os.Open(abs_path)
+
+	if err != nil {
+		log.Fatal("failed to open %s, because %s\n", abs_path, err)
+	}
+
+	defer fh.Close()
+
+	feature, err := ioutil.ReadAll(fh)
+
+	if err != nil {
+		log.Fatal("failed to read %s, because %s\n", abs_path, err)
+	}
+
+	return DrawFeature(feature, g)
+}
+
 func main() {
 
 	outfile := flag.String("out", "", "Where to write globe")
 	size := flag.Int("size", 1600, "The size of the globe (in pixels)")
 	mode := flag.String("mode", "meta", "... (default is 'meta' for one or more meta files)")
+
+	feature := flag.Bool("feature", false, "...")
 
 	center := flag.String("center", "", "")
 	center_lat := flag.Float64("latitude", 37.755244, "")
@@ -117,6 +158,13 @@ func main() {
 
 	if *mode == "meta" {
 
+		max_fh := 10
+		throttle := make(chan bool, max_fh)
+
+		for i := 0; i < max_fh; i++ {
+			throttle <- true
+		}
+
 		for _, path := range flag.Args() {
 
 			reader, err := csv.NewDictReaderFromPath(path)
@@ -135,6 +183,11 @@ func main() {
 				if err != nil {
 					log.Println(err, path)
 					break
+				}
+
+				if *feature {
+					DrawRow(path, row, g, throttle)
+					continue
 				}
 
 				str_lat, ok := row["geom_latitude"]
