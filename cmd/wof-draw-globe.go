@@ -353,68 +353,72 @@ func main() {
 		var delays []int
 
 		coords := [][]float64{
-			[]float64{0.0, 0.0},
-			[]float64{0.0, 45.0},
-			[]float64{0.0, 90.0},
-			[]float64{0.0, 135.0},
-			[]float64{0.0, 180.0},
-			[]float64{0.0, -135.0},
-			[]float64{0.0, -90.0},
-			[]float64{0.0, -45.0},
+			[]float64{45.0, 0.0},
+			[]float64{45.0, 45.0},
+			[]float64{45.0, 90.0},
+			[]float64{45.0, 135.0},
+			[]float64{45.0, 180.0},
+			[]float64{45.0, -135.0},
+			[]float64{45.0, -90.0},
+			[]float64{45.0, -45.0},
 		}
 
-		/*
-			ch := make(chan *image.Paletted)
-		*/
+		ch := make(chan *image.Paletted)
+
+		max_proc := 1	// apparently anything will invoke the OOM killer...
+		throttle := make(chan bool, max_proc)
+
+		for i := 0; i < max_proc; i++ {
+			throttle <- true
+		}
 
 		for _, latlon := range coords {
 
 			lat := latlon[0]
 			lon := latlon[1]
 
-			/*
-				go func(lat float64, lon float64) {
-			*/
-			t1 := time.Now()
+			go func(lat float64, lon float64, throttle chan bool) {
 
-			g.CenterOn(lat, lon)
-			im := g.Image(*size)
+				defer func() {
+					throttle <- true
+				}()
 
-			t2 := time.Since(t1)
-			log.Printf("time to render %v\n", t2)
+				t1 := time.Now()
 
-			pm := image.NewPaletted(im.Bounds(), palette)
-			draw.FloydSteinberg.Draw(pm, im.Bounds(), im, image.ZP)
+				g.CenterOn(lat, lon)
+				im := g.Image(*size)
 
-			images = append(images, pm)
-			delays = append(delays, 200)
+				t2 := time.Since(t1)
+				log.Printf("time to render %v\n", t2)
 
-			/*
-					ch <- pm
+				pm := image.NewPaletted(im.Bounds(), palette)
+				draw.FloydSteinberg.Draw(pm, im.Bounds(), im, image.ZP)
 
-				}(lat, lon)
-			*/
+				// images = append(images, pm)
+				// delays = append(delays, 200)
+
+				ch <- pm
+
+			}(lat, lon, throttle)
 		}
 
-		/*
-			count := len(coords)
+		count := len(coords)
 
-			for i := count; i > 0; {
+		for i := count; i > 0; {
 
-				select {
-				case pm := <-ch:
+			select {
+			case pm := <-ch:
 
-					images = append(images, pm)
-					delays = append(delays, 5)
+				images = append(images, pm)
+				delays = append(delays, 20)
 
-					i -= 1
+				i -= 1
 
-					log.Print("count is ", i)
-				default:
-					// pass
-				}
+				log.Print("count is ", i)
+			default:
+				// pass
 			}
-		*/
+		}
 
 		fh, err := os.OpenFile(*outfile, os.O_WRONLY|os.O_CREATE, 0600)
 
