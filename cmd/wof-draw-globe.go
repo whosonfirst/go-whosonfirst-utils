@@ -45,6 +45,8 @@ func DrawFeature(feature []byte, gl *globe.Globe) error {
 		gl.DrawDot(lat, lon, 0.01, globe.Color(green))
 	*/
 
+	// http://geojson.org/geojson-spec.html#id4
+
 	case "Polygon":
 
 		paths := make([][]*globe.Point, 0)
@@ -68,8 +70,33 @@ func DrawFeature(feature []byte, gl *globe.Globe) error {
 
 		gl.DrawPaths(paths)
 
+	// http://geojson.org/geojson-spec.html#id7
+
 	case "MultiPolygon":
-		// log.Println("Can't process MultiPolygon")
+
+		for _, polys := range coords.Array() {
+
+			paths := make([][]*globe.Point, 0)
+
+			for _, ring := range polys.Array() {
+
+				path := make([]*globe.Point, 0)
+
+				for _, r := range ring.Array() {
+
+					lonlat := r.Array()
+					lat := lonlat[1].Float()
+					lon := lonlat[0].Float()
+
+					pt := globe.NewPoint(lat, lon)
+					path = append(path, &pt)
+				}
+
+				paths = append(paths, path)
+			}
+
+			gl.DrawPaths(paths)
+		}
 
 	default:
 		return errors.New("Unsupported geometry type")
