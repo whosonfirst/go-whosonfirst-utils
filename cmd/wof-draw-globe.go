@@ -354,25 +354,67 @@ func main() {
 
 		coords := [][]float64{
 			[]float64{0.0, 0.0},
-			[]float64{900., 0.0},
-			[]float64{180.0, 0.0},
-			[]float64{-90.0, 0.0},
+			[]float64{0.0, 45.0},
+			[]float64{0.0, 90.0},
+			[]float64{0.0, 135.0},
+			[]float64{0.0, 180.0},
+			[]float64{0.0, -135.0},
+			[]float64{0.0, -90.0},
+			[]float64{0.0, -45.0},
 		}
+
+		/*
+			ch := make(chan *image.Paletted)
+		*/
 
 		for _, latlon := range coords {
 
 			lat := latlon[0]
 			lon := latlon[1]
 
+			/*
+				go func(lat float64, lon float64) {
+			*/
+			t1 := time.Now()
+
 			g.CenterOn(lat, lon)
 			im := g.Image(*size)
+
+			t2 := time.Since(t1)
+			log.Printf("time to render %v\n", t2)
 
 			pm := image.NewPaletted(im.Bounds(), palette)
 			draw.FloydSteinberg.Draw(pm, im.Bounds(), im, image.ZP)
 
 			images = append(images, pm)
-			delays = append(delays, 0)
+			delays = append(delays, 200)
+
+			/*
+					ch <- pm
+
+				}(lat, lon)
+			*/
 		}
+
+		/*
+			count := len(coords)
+
+			for i := count; i > 0; {
+
+				select {
+				case pm := <-ch:
+
+					images = append(images, pm)
+					delays = append(delays, 5)
+
+					i -= 1
+
+					log.Print("count is ", i)
+				default:
+					// pass
+				}
+			}
+		*/
 
 		fh, err := os.OpenFile(*outfile, os.O_WRONLY|os.O_CREATE, 0600)
 

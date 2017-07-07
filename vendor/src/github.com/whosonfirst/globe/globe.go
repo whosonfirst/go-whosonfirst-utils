@@ -206,7 +206,7 @@ func (g *Globe) drawPreparedPaths(paths [][]struct{ lat, lng float32 }, style ..
 }
 
 func (g *Globe) DrawPaths(paths [][]*Point, style ...Option) {
-	defer g.styled(Color(g.style.LineColor), style...)()
+	// defer g.styled(Color(g.style.LineColor), style...)()
 	for _, path := range paths {
 		n := len(path)
 		for i := 0; i+1 < n; i++ {
