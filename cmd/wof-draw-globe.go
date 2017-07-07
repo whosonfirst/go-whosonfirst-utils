@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -37,13 +38,11 @@ func DrawFeature(feature []byte, gl *globe.Globe) error {
 
 	case "Point":
 
-	/*
 		lonlat := coords.Array()
 		lat := lonlat[1].Float()
 		lon := lonlat[0].Float()
 
-		gl.DrawDot(lat, lon, 0.01, globe.Color(green))
-	*/
+		gl.DrawDot(lat, lon, 0.01)
 
 	// http://geojson.org/geojson-spec.html#id4
 
@@ -105,7 +104,7 @@ func DrawFeature(feature []byte, gl *globe.Globe) error {
 	return nil
 }
 
-func DrawRow(path string, row map[string]string, g *globe.Globe, throttle chan bool) error {
+func DrawRow(path string, row map[string]string, g *globe.Globe, throttle chan bool, remote bool) error {
 
 	<-throttle
 
@@ -120,24 +119,48 @@ func DrawRow(path string, row map[string]string, g *globe.Globe, throttle chan b
 		return nil
 	}
 
-	meta := filepath.Dir(path)
-	root := filepath.Dir(meta)
-	data := filepath.Join(root, "data")
+	var feature []byte
 
-	abs_path := filepath.Join(data, rel_path)
+	if remote {
 
-	fh, err := os.Open(abs_path)
+		root := "https://whosonfirst.mapzen.com/data"
+		uri := filepath.Join(root, rel_path)
 
-	if err != nil {
-		log.Fatal("failed to open %s, because %s\n", abs_path, err)
-	}
+		rsp, err := http.Get(uri)
 
-	defer fh.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	feature, err := ioutil.ReadAll(fh)
+		defer rsp.Body.Close()
 
-	if err != nil {
-		log.Fatal("failed to read %s, because %s\n", abs_path, err)
+		feature, err = ioutil.ReadAll(rsp.Body)
+
+		if err != nil {
+			log.Fatal("failed to read %s, because %s\n", uri, err)
+		}
+
+	} else {
+
+		meta := filepath.Dir(path)
+		root := filepath.Dir(meta)
+		data := filepath.Join(root, "data")
+
+		abs_path := filepath.Join(data, rel_path)
+
+		fh, err := os.Open(abs_path)
+
+		if err != nil {
+			log.Fatal("failed to open %s, because %s\n", abs_path, err)
+		}
+
+		defer fh.Close()
+
+		feature, err = ioutil.ReadAll(fh)
+
+		if err != nil {
+			log.Fatal("failed to read %s, because %s\n", abs_path, err)
+		}
 	}
 
 	return DrawFeature(feature, g)
@@ -149,6 +172,7 @@ func main() {
 	size := flag.Int("size", 1600, "The size of the globe (in pixels)")
 	mode := flag.String("mode", "meta", "... (default is 'meta' for one or more meta files)")
 
+	remote := flag.Bool("remote", false, "...")
 	feature := flag.Bool("feature", false, "...")
 
 	center := flag.String("center", "", "")
@@ -213,7 +237,7 @@ func main() {
 				}
 
 				if *feature {
-					DrawRow(path, row, g, throttle)
+					DrawRow(path, row, g, throttle, *remote)
 					continue
 				}
 
