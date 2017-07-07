@@ -8,7 +8,10 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-csv"
 	"github.com/whosonfirst/go-whosonfirst-uri"
+	"image"
 	"image/color"
+	"image/draw"
+	"image/gif"
 	"io"
 	"io/ioutil"
 	"log"
@@ -174,6 +177,7 @@ func main() {
 
 	remote := flag.Bool("remote", false, "...")
 	feature := flag.Bool("feature", false, "...")
+	rotate := flag.Bool("rotate", false, "...")
 
 	center := flag.String("center", "", "")
 	center_lat := flag.Float64("latitude", 37.755244, "")
@@ -337,15 +341,66 @@ func main() {
 
 	t3 := time.Now()
 
-	g.CenterOn(*center_lat, *center_lon)
-	err := g.SavePNG(*outfile, *size)
+	if *rotate {
+
+		// Initialize palette (#ffffff, #000000, #ff0000)
+		var palette color.Palette = color.Palette{}
+		palette = append(palette, color.White)
+		palette = append(palette, color.Black)
+		palette = append(palette, color.RGBA{0xff, 0x00, 0x00, 0xff})
+
+		var images []*image.Paletted
+		var delays []int
+
+		coords := [][]float64{
+			[]float64{0.0, 0.0},
+			[]float64{900., 0.0},
+			[]float64{180.0, 0.0},
+			[]float64{-90.0, 0.0},
+		}
+
+		for _, latlon := range coords {
+
+			lat := latlon[0]
+			lon := latlon[1]
+
+			g.CenterOn(lat, lon)
+			im := g.Image(*size)
+
+			pm := image.NewPaletted(im.Bounds(), palette)
+			draw.FloydSteinberg.Draw(pm, im.Bounds(), im, image.ZP)
+
+			images = append(images, pm)
+			delays = append(delays, 0)
+		}
+
+		fh, err := os.OpenFile(*outfile, os.O_WRONLY|os.O_CREATE, 0600)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer fh.Close()
+
+		gif.EncodeAll(fh, &gif.GIF{
+			Image: images,
+			Delay: delays,
+		})
+
+	} else {
+
+		g.CenterOn(*center_lat, *center_lon)
+
+		err := g.SavePNG(*outfile, *size)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	}
 
 	t4 := time.Since(t3)
 
 	log.Printf("time to draw all the things %v\n", t4)
-
-	if err != nil {
-		log.Fatal(err)
-	}
 
 }
