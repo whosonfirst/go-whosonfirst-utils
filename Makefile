@@ -11,10 +11,11 @@ self:   prep
 	cp -r vendor/src/* src/
 
 deps:
-	@GOPATH=$(GOPATH) go get -u "github.com/mmcloughlin/globe"
+	# @GOPATH=$(GOPATH) go get -u "github.com/mmcloughlin/globe"
 	@GOPATH=$(GOPATH) go get -u "github.com/tidwall/gjson"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-crawl"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-csv"
+	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/globe"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-uri"
 
 rmdeps:

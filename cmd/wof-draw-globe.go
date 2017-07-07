@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"flag"
-	"github.com/mmcloughlin/globe"
+	"github.com/tidwall/gjson"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-csv"
+	"github.com/whosonfirst/globe"			// for to make DrawPreparedPaths public
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"image/color"
 	"io"
@@ -17,6 +19,60 @@ import (
 )
 
 func DrawFeature(feature []byte, gl *globe.Globe) error {
+
+	geom_type := gjson.GetBytes(feature, "geometry.type")
+
+	if !geom_type.Exists() {
+		return errors.New("Geometry is missing a type property")
+	}
+
+	coords := gjson.GetBytes(feature, "geometry.coordinates")
+
+	if !coords.Exists() {
+		return errors.New("Geometry is missing a coordinates property")
+	}
+
+	switch geom_type.String() {
+
+	case "Point":
+
+	/*
+		lonlat := coords.Array()
+		lat := lonlat[1].Float()
+		lon := lonlat[0].Float()
+
+		gl.DrawDot(lat, lon, 0.01, globe.Color(green))
+		*/
+		
+	case "Polygon":
+
+		paths := make([][]*globe.Point, 0)
+
+		for _, ring := range coords.Array() {
+
+			path := make([]*globe.Point, 0)
+			
+			for _, r := range ring.Array() {
+
+				lonlat := r.Array()
+				lat := lonlat[1].Float()
+				lon := lonlat[0].Float()
+
+				pt := globe.NewPoint(lat, lon)
+				path = append(path, &pt) 
+			}
+
+			paths = append(paths, path)
+		}
+
+		gl.DrawPaths(paths)
+		
+	case "MultiPolygon":
+		// log.Println("Can't process MultiPolygon")
+
+	default:
+		return errors.New("Unsupported geometry type")
+	}
 
 	return nil
 }

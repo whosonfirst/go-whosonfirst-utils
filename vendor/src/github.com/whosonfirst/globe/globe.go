@@ -30,6 +30,15 @@ type Style struct {
 	Scale          float64
 }
 
+type Point struct {
+     lat float64
+     lng float64     	 
+}
+
+func NewPoint (lat float64, lng float64) Point {
+     return Point{lat, lng}
+}
+
 // imageOptions builds the pinhole ImageOptions object for this Style.
 func (s Style) imageOptions() *pinhole.ImageOptions {
 	return &pinhole.ImageOptions{
@@ -191,6 +200,19 @@ func (g *Globe) drawPreparedPaths(paths [][]struct{ lat, lng float32 }, style ..
 			p1, p2 := path[i], path[i+1]
 			x1, y1, z1 := cartestian(float64(p1.lat), float64(p1.lng))
 			x2, y2, z2 := cartestian(float64(p2.lat), float64(p2.lng))
+			g.p.DrawLine(x1, y1, z1, x2, y2, z2)
+		}
+	}
+}
+
+func (g *Globe) DrawPaths(paths [][]*Point, style ...Option) {
+	defer g.styled(Color(g.style.LineColor), style...)()
+	for _, path := range paths {
+		n := len(path)
+		for i := 0; i+1 < n; i++ {
+			p1, p2 := path[i], path[i+1]
+			x1, y1, z1 := cartestian(p1.lat, p1.lng)
+			x2, y2, z2 := cartestian(p2.lat, p2.lng)
 			g.p.DrawLine(x1, y1, z1, x2, y2, z2)
 		}
 	}
