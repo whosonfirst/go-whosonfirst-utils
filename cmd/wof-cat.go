@@ -59,8 +59,7 @@ func main() {
 
 	for _, str_id := range ids {
 
-		// id, err := strconv.ParseInt(str_id, 10, 64)
-		id, err := strconv.Atoi(str_id)
+		id, err := strconv.ParseInt(str_id, 10, 64)
 
 		abs_path, err := uri.Id2AbsPath(*root, id, args)
 

@@ -44,7 +44,7 @@ func HashWOFId(w *WOFId, sources map[string]string) (map[string]string, error) {
 
 	wofid := w.Id
 
-	rel_path, err := uri.Id2RelPath(int(wofid)) // OH GOD FIX ME...
+	rel_path, err := uri.Id2RelPath(wofid)
 
 	if err != nil {
 		return hashes, err

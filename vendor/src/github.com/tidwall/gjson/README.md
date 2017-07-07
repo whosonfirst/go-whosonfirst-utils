@@ -10,7 +10,7 @@
 <p align="center">get a json value quickly</a></p>
 
 GJSON is a Go package that provides a [fast](#performance) and [simple](#get-a-value) way to get values from a json document.
-It has features such as [one line retrieval](#get-a-value), [dot notation paths](#path-syntax), [iteration](#iterate-through-an-object-or-array). It can also [unmarshal](#unmarshalling) 3 to 4 times faster than the standard Go `encoding/json` unmarshaller.
+It has features such as [one line retrieval](#get-a-value), [dot notation paths](#path-syntax), [iteration](#iterate-through-an-object-or-array).
 
 Getting Started
 ===============
@@ -136,8 +136,6 @@ result.Less(token Result, caseSensitive bool) bool
 
 The `result.Value()` function returns an `interface{}` which requires type assertion and is one of the following Go types:
 
-
-
 The `result.Array()` function returns back an array of values.
 If the result represents a non-existent value, then an empty array will be returned.
 If the result is not a JSON array, the return value will be an array containing one result.
@@ -169,14 +167,14 @@ Suppose you want all the last names from the following json:
       "lastName": "Harold", 
     }
   ]
-}`
+}
 ```
 
 You would use the path "programmers.#.lastName" like such:
 
 ```go
 result := gjson.Get(json, "programmers.#.lastName")
-for _,name := range result.Array() {
+for _, name := range result.Array() {
 	println(name.String())
 }
 ```
@@ -197,7 +195,7 @@ Returning `false` from an iterator will stop iteration.
 
 ```go
 result := gjson.Get(json, "programmers")
-result.ForEach(func(key, value gjson.Result) bool{
+result.ForEach(func(key, value gjson.Result) bool {
 	println(value.String()) 
 	return true // keep iterating
 })
@@ -228,7 +226,7 @@ if !value.Exists() {
 }
 
 // Or as one step
-if gjson.Get(json, "name.last").Exists(){
+if gjson.Get(json, "name.last").Exists() {
 	println("has a last name")
 }
 ```
@@ -236,17 +234,14 @@ if gjson.Get(json, "name.last").Exists(){
 ## Unmarshalling
 
 There's a `gjson.Unmarshal` function which loads json data into a value.
-It's a drop in replacement for `json.Unmarshal` and you can typically
-see a 3-4x boost in performance without the need for external generators.
+It's a general replacement for `json.Unmarshal` and you can typically
+see a 2-3x boost in performance without the need for external generators.
 
-This function works almost identically to `json.Unmarshal` except that it
-expects the json to be well-formed prior to being called. Bad json
-will not panic or cause a decoding error.
-
-Another difference is that `gjson.Unmarshal` will automatically attempt to
-convert JSON values to any Go type. For example, the JSON string "100" or
-the JSON number 100 can be equally assigned to Go string, int, byte, uint64,
-etc. This rule applies to all types.
+This function works almost identically to `json.Unmarshal` except that 
+`gjson.Unmarshal` will automatically attempt to convert JSON values to any
+Go type. For example, the JSON string "100" or the JSON number 100 can be
+equally assigned to Go string, int, byte, uint64, etc. This rule applies to
+all types.
 
 
 ```go
@@ -289,7 +284,7 @@ To unmarshal to a `map[string]interface{}`:
 
 ```go
 m, ok := gjson.Parse(json).Value().(map[string]interface{})
-if !ok{
+if !ok {
 	// not a map
 }
 ```

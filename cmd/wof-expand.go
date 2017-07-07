@@ -38,7 +38,7 @@ func main() {
 
 	for _, str_id := range flag.Args() {
 
-		id, err := strconv.Atoi(str_id)
+		id, err := strconv.ParseInt(str_id, 10, 64)
 
 		if err != nil {
 			log.Fatal("Unable to parse %s, because %v", str_id, err)
