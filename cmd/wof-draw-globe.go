@@ -365,7 +365,7 @@ func main() {
 
 		ch := make(chan *image.Paletted)
 
-		max_proc := 1	// apparently anything will invoke the OOM killer...
+		max_proc := 1 // apparently anything will invoke the OOM killer...
 		throttle := make(chan bool, max_proc)
 
 		for i := 0; i < max_proc; i++ {

@@ -5,19 +5,19 @@ import (
 	"encoding/json"
 	"flag"
 	"github.com/tidwall/gjson"
-	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
-	"time"
 )
 
 func main() {
 
 	outfile := flag.String("out", "", "Where to write records (default is STDOUT)")
+	root := flag.String("root", "", "...")
 	exclude_deprecated := flag.Bool("exclude-deprecated", false, "Exclude records that have been deprecated.")
 	exclude_superseded := flag.Bool("exclude-superseded", false, "Exclude records that have been superseded.")
 
@@ -42,42 +42,55 @@ func main() {
 	}
 
 	mu := new(sync.Mutex)
+	wg := new(sync.WaitGroup)
+
+	throttle := make(chan bool, *procs)
+
+	for i := 0; i < *procs; i++ {
+		throttle <- true
+	}
 
 	for _, rel_path := range flag.Args() {
 
 		abs_path := filepath.Join(*root, rel_path)
 
-			is_wof, err := uri.IsWOFFile(abs_path)
+		is_wof, err := uri.IsWOFFile(abs_path)
+
+		if err != nil {
+			log.Fatal("unable to determine whether %s is a WOF file, because %s\n", abs_path, err)
+		}
+
+		if !is_wof {
+			// log.Printf("%s is not a WOF file\n", abs_path)
+			continue
+		}
+
+		is_alt, err := uri.IsAltFile(abs_path)
+
+		if err != nil {
+			log.Fatal("unable to determine whether %s is an alt (WOF) file, because %s\n", abs_path, err)
+		}
+
+		if is_alt {
+			// log.Printf("%s is an alt (WOF) file\n", abs_path)
+			continue
+		}
+
+		<-throttle
+
+		wg.Add(1)
+
+		go func(abs_abs_path string, wr *bufio.Writer, wg *sync.WaitGroup, throttle chan bool) {
+
+			defer func() {
+				wg.Done()
+				throttle <- true
+			}()
+
+			fh, err := os.Open(abs_abs_path)
 
 			if err != nil {
-				log.Printf("unable to determine whether %s is a WOF file, because %s\n", path, err)
-				return err
-			}
-
-			if !is_wof {
-				// log.Printf("%s is not a WOF file\n", path)
-				return nil
-			}
-
-			is_alt, err := uri.IsAltFile(abs_path)
-
-			if err != nil {
-				log.Printf("unable to determine whether %s is an alt (WOF) file, because %s\n", path, err)
-				return err
-			}
-
-			if is_alt {
-				// log.Printf("%s is an alt (WOF) file\n", path)
-				return nil
-			}
-
-		go func(abs_path string) {
-
-			fh, err := os.Open(abs_path)
-
-			if err != nil {
-				log.Printf("failed to open %s, because %s\n", path, err)
-				return err
+				log.Fatal("failed to open %s, because %s\n", abs_path, err)
 			}
 
 			defer fh.Close()
@@ -85,8 +98,7 @@ func main() {
 			body, err := ioutil.ReadAll(fh)
 
 			if err != nil {
-				log.Printf("failed to read %s, because %s\n", path, err)
-				return err
+				log.Fatal("failed to read %s, because %s\n", abs_path, err)
 			}
 
 			var feature interface{}
@@ -94,8 +106,7 @@ func main() {
 			err = json.Unmarshal(body, &feature)
 
 			if err != nil {
-				log.Printf("failed to parse %s, because %s\n", path, err)
-				return err
+				log.Fatal("failed to parse %s, because %s\n", abs_path, err)
 			}
 
 			if *exclude_deprecated {
@@ -107,7 +118,7 @@ func main() {
 					deprecated := rsp.String()
 
 					if deprecated != "" && deprecated != "uuuu" {
-						return nil
+						return
 					}
 				}
 			}
@@ -121,7 +132,7 @@ func main() {
 					superseded_by := rsp.Array()
 
 					if len(superseded_by) > 0 {
-						return nil
+						return
 					}
 				}
 			}
@@ -129,8 +140,7 @@ func main() {
 			body, err = json.Marshal(feature)
 
 			if err != nil {
-				log.Printf("failed to parse %s, because %s\n", path, err)
-				return err
+				log.Fatal("failed to parse %s, because %s\n", abs_path, err)
 			}
 
 			mu.Lock()
@@ -139,12 +149,13 @@ func main() {
 			_, err = wr.Write(body)
 
 			if err != nil {
-				return err
+				return
 			}
 
 			wr.Write([]byte("\n"))
 			wr.Flush()
-		}(abs_path)
+
+		}(abs_path, wr, wg, throttle)
 
 		wg.Wait()
 	}

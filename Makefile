@@ -40,6 +40,7 @@ bin:	self
 	@GOPATH=$(shell pwd) go build -o bin/wof-d2fc cmd/wof-d2fc.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-draw-globe cmd/wof-draw-globe.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-geojsonls-dump cmd/wof-geojsonls-dump.go
+	@GOPATH=$(shell pwd) go build -o bin/wof-geojsonls-dump-filelist cmd/wof-geojsonls-dump-filelist.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-geojsonls-validate cmd/wof-geojsonls-validate.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-ensure-property cmd/wof-ensure-property.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-expand cmd/wof-expand.go
