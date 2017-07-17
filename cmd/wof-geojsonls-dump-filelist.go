@@ -1,5 +1,9 @@
 package main
 
+// wof-api -param api_key=mapzen-xxxxxx -param method=whosonfirst.places.getDescendants -param placetype=venue -param id=102086957 -geojson-ls -async -paginated --geojson-ls-output /usr/local/data-ext/lacity/wof-venues-lacounty.geojson.txt
+
+// wof-geojsonls-dump-filelist -root /usr/local/data/whosonfirst-data-venue-us-ca/data /usr/local/data-ext/lacity/lacounty-venues.txt > /usr/local/data-ext/lacity/lacounty-venues-geojson.txt
+
 import (
 	"bufio"
 	"encoding/json"
@@ -50,113 +54,126 @@ func main() {
 		throttle <- true
 	}
 
-	for _, rel_path := range flag.Args() {
+	for _, filelist := range flag.Args() {
 
-		abs_path := filepath.Join(*root, rel_path)
-
-		is_wof, err := uri.IsWOFFile(abs_path)
+		fh, err := os.Open(filelist)
 
 		if err != nil {
-			log.Fatal("unable to determine whether %s is a WOF file, because %s\n", abs_path, err)
+			log.Fatal(err)
 		}
 
-		if !is_wof {
-			// log.Printf("%s is not a WOF file\n", abs_path)
-			continue
-		}
+		scanner := bufio.NewScanner(fh)
 
-		is_alt, err := uri.IsAltFile(abs_path)
+		for scanner.Scan() {
 
-		if err != nil {
-			log.Fatal("unable to determine whether %s is an alt (WOF) file, because %s\n", abs_path, err)
-		}
+			rel_path := scanner.Text()
+			abs_path := filepath.Join(*root, rel_path)
 
-		if is_alt {
-			// log.Printf("%s is an alt (WOF) file\n", abs_path)
-			continue
-		}
-
-		<-throttle
-
-		wg.Add(1)
-
-		go func(abs_abs_path string, wr *bufio.Writer, wg *sync.WaitGroup, throttle chan bool) {
-
-			defer func() {
-				wg.Done()
-				throttle <- true
-			}()
-
-			fh, err := os.Open(abs_abs_path)
+			is_wof, err := uri.IsWOFFile(abs_path)
 
 			if err != nil {
-				log.Fatal("failed to open %s, because %s\n", abs_path, err)
+				log.Fatal("unable to determine whether %s is a WOF file, because %s\n", abs_path, err)
 			}
 
-			defer fh.Close()
+			if !is_wof {
+				// log.Printf("%s is not a WOF file\n", abs_path)
+				continue
+			}
 
-			body, err := ioutil.ReadAll(fh)
+			is_alt, err := uri.IsAltFile(abs_path)
 
 			if err != nil {
-				log.Fatal("failed to read %s, because %s\n", abs_path, err)
+				log.Fatal("unable to determine whether %s is an alt (WOF) file, because %s\n", abs_path, err)
 			}
 
-			var feature interface{}
-
-			err = json.Unmarshal(body, &feature)
-
-			if err != nil {
-				log.Fatal("failed to parse %s, because %s\n", abs_path, err)
+			if is_alt {
+				// log.Printf("%s is an alt (WOF) file\n", abs_path)
+				continue
 			}
 
-			if *exclude_deprecated {
+			<-throttle
 
-				rsp := gjson.GetBytes(body, "properties.edtf:deprecated")
+			wg.Add(1)
 
-				if rsp.Exists() {
+			go func(abs_abs_path string, wr *bufio.Writer, wg *sync.WaitGroup, throttle chan bool) {
 
-					deprecated := rsp.String()
+				defer func() {
+					wg.Done()
+					throttle <- true
+				}()
 
-					if deprecated != "" && deprecated != "uuuu" {
-						return
+				fh, err := os.Open(abs_abs_path)
+
+				if err != nil {
+					// log.Fatal("failed to open %s, because %s\n", abs_path, err)
+					return
+				}
+
+				defer fh.Close()
+
+				body, err := ioutil.ReadAll(fh)
+
+				if err != nil {
+					log.Fatal("failed to read %s, because %s\n", abs_path, err)
+				}
+
+				var feature interface{}
+
+				err = json.Unmarshal(body, &feature)
+
+				if err != nil {
+					log.Fatal("failed to parse %s, because %s\n", abs_path, err)
+				}
+
+				if *exclude_deprecated {
+
+					rsp := gjson.GetBytes(body, "properties.edtf:deprecated")
+
+					if rsp.Exists() {
+
+						deprecated := rsp.String()
+
+						if deprecated != "" && deprecated != "uuuu" {
+							return
+						}
 					}
 				}
-			}
 
-			if *exclude_superseded {
+				if *exclude_superseded {
 
-				rsp := gjson.GetBytes(body, "properties.wof:superseded_by")
+					rsp := gjson.GetBytes(body, "properties.wof:superseded_by")
 
-				if rsp.Exists() {
+					if rsp.Exists() {
 
-					superseded_by := rsp.Array()
+						superseded_by := rsp.Array()
 
-					if len(superseded_by) > 0 {
-						return
+						if len(superseded_by) > 0 {
+							return
+						}
 					}
 				}
-			}
 
-			body, err = json.Marshal(feature)
+				body, err = json.Marshal(feature)
 
-			if err != nil {
-				log.Fatal("failed to parse %s, because %s\n", abs_path, err)
-			}
+				if err != nil {
+					log.Fatal("failed to parse %s, because %s\n", abs_path, err)
+				}
 
-			mu.Lock()
-			defer mu.Unlock()
+				mu.Lock()
+				defer mu.Unlock()
 
-			_, err = wr.Write(body)
+				_, err = wr.Write(body)
 
-			if err != nil {
-				return
-			}
+				if err != nil {
+					return
+				}
 
-			wr.Write([]byte("\n"))
-			wr.Flush()
+				wr.Write([]byte("\n"))
+				wr.Flush()
 
-		}(abs_path, wr, wg, throttle)
+			}(abs_path, wr, wg, throttle)
 
-		wg.Wait()
+			wg.Wait()
+		}
 	}
 }

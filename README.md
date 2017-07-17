@@ -203,6 +203,18 @@ For example:
 ./bin/wof-geojsonls-dump --exclude-deprecated --exclude-superseded /usr/local/data/whosonfirst-data-venue-* > /tmp/venues-all.txt
 ```
 
+### wof-geojsonls-dump-filelist
+
+_Please write me._
+
+```
+wof-api -param api_key=mapzen-xxxxxx -param method=whosonfirst.places.getDescendants -param placetype=venue -param id=102086957 -geojson-ls -async -paginated --geojson-ls-output /usr/local/data-ext/lacity/wof-venues-lacounty.geojson.txt
+
+wof-geojsonls-dump-filelist -root /usr/local/data/whosonfirst-data-venue-us-ca/data /usr/local/data-ext/lacity/lacounty-venues.txt -outfile /usr/local/data-ext/lacity/lacounty-venues-geojson.txt
+```
+
+`wof-api` is part of the [go-whosonfirst-api](https://github.com/whosonfirst/go-whosonfirst-api) package.
+
 ### wof-geojsonls-validate
 
 Ensure that all the records in a GeoJSON LS dump are valid JSON.
