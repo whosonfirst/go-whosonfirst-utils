@@ -1,7 +1,7 @@
 package main
 
 import (
-       "bufio"
+	"bufio"
 	"encoding/json"
 	"flag"
 	"github.com/tidwall/gjson"
@@ -32,13 +32,13 @@ func main() {
 
 	if *outfile != "" {
 
-	   fh, err := os.Create(*outfile)
+		fh, err := os.Create(*outfile)
 
-	   if err != nil {
-	   	log.Fatal(err)
-	   }
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	   wr = bufio.NewWriter(fh)
+		wr = bufio.NewWriter(fh)
 
 	} else {
 		wr = bufio.NewWriter(os.Stdout)
@@ -154,7 +154,7 @@ func main() {
 		}
 
 		t1 := time.Now()
-		
+
 		c := crawl.NewCrawler(root)
 		c.Crawl(callback)
 

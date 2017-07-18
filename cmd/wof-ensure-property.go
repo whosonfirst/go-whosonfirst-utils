@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"github.com/tidwall/gjson"
@@ -22,6 +23,7 @@ func main() {
 	repo := flag.String("repo", "/usr/local/data/whosonfirst-data", "The WOF repo whose files you want to test.")
 	procs := flag.Int("processes", runtime.NumCPU()*2, "The number of concurrent processes to use")
 	prop := flag.String("property", "", "The dotted notation for the property whose existence you want to test.")
+	proptype := flag.String("type", "", "IF a property exists it MUST be the specified type. Valid: 'string', 'number', 'boolean', 'null'. If set, missing properties are ignored.")
 
 	flag.Parse()
 
@@ -53,6 +55,8 @@ func main() {
 	mu := new(sync.Mutex)
 
 	callback := func(path string, info os.FileInfo) error {
+
+		var msg bytes.Buffer
 
 		if info.IsDir() {
 			return nil
@@ -101,8 +105,24 @@ func main() {
 
 		result := gjson.GetBytes(body, jpath)
 
-		if result.Exists() {
+		if *proptype != "" {
+			if result.Exists() != true {
+				return nil
+			} else if *proptype == "string" && result.Type.String() == "String" {
+				return nil
+			} else if *proptype == "number" && result.Type.String() == "Number" {
+				return nil
+			} else if *proptype == "boolean" && (result.Type.String() == "False" || result.Type.String() == "True") {
+				return nil
+			} else if *proptype == "null" && result.Type.String() == "Null" {
+				return nil
+			}
+			msg.WriteString("unexpected type '%s': ")
+			msg.WriteString(result.Type.String())
+		} else if result.Exists() {
 			return nil
+		} else {
+			msg.WriteString("missing '%s'")
 		}
 
 		id, err := uri.IdFromPath(path)
@@ -113,7 +133,7 @@ func main() {
 
 		str_id := strconv.FormatInt(id, 10)
 
-		details := fmt.Sprintf("missing '%s'", jpath)
+		details := fmt.Sprintf(msg.String(), jpath)
 
 		mu.Lock()
 		defer mu.Unlock()
