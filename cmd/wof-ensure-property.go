@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"github.com/tidwall/gjson"
@@ -56,7 +55,7 @@ func main() {
 
 	callback := func(path string, info os.FileInfo) error {
 
-		var msg bytes.Buffer
+		var details = ""
 
 		if info.IsDir() {
 			return nil
@@ -106,6 +105,7 @@ func main() {
 		result := gjson.GetBytes(body, jpath)
 
 		if *proptype != "" {
+
 			if result.Exists() != true {
 				return nil
 			} else if *proptype == "string" && result.Type.String() == "String" {
@@ -116,13 +116,26 @@ func main() {
 				return nil
 			} else if *proptype == "null" && result.Type.String() == "Null" {
 				return nil
+			} else if *proptype == "object" && result.String()[0:1] == "{" {
+				return nil
+			} else if *proptype == "array" && result.String()[0:1] == "[" {
+				return nil
 			}
-			msg.WriteString("unexpected type '%s': ")
-			msg.WriteString(result.Type.String())
+
+			resulttype := result.Type.String()
+			if resulttype == "JSON" {
+				if result.String()[0:1] == "{" {
+					resulttype = "object"
+				} else if result.String()[0:1] == "[" {
+					resulttype = "array"
+				}
+			}
+
+			details = "unexpected type '%s': " + resulttype
 		} else if result.Exists() {
 			return nil
 		} else {
-			msg.WriteString("missing '%s'")
+			details = "missing '%s'"
 		}
 
 		id, err := uri.IdFromPath(path)
@@ -133,7 +146,7 @@ func main() {
 
 		str_id := strconv.FormatInt(id, 10)
 
-		details := fmt.Sprintf(msg.String(), jpath)
+		details = fmt.Sprintf(details, jpath)
 
 		mu.Lock()
 		defer mu.Unlock()
