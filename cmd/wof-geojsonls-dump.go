@@ -1,10 +1,14 @@
 package main
 
+// TO DO: please reconcile with wof-geojsonls-dump-filelist.go
+
 import (
 	"bufio"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io/ioutil"
@@ -17,7 +21,8 @@ import (
 
 func main() {
 
-	outfile := flag.String("out", "", "Where to write records (default is STDOUT)")
+	outfile := flag.String("outfile", "", "Where to write records (default is STDOUT)")
+	lieu := flag.Bool("lieu", false, "...")
 	exclude_deprecated := flag.Bool("exclude-deprecated", false, "Exclude records that have been deprecated.")
 	exclude_superseded := flag.Bool("exclude-superseded", false, "Exclude records that have been superseded.")
 	timings := flag.Bool("timings", false, "Print timings")
@@ -94,15 +99,6 @@ func main() {
 				return err
 			}
 
-			var feature interface{}
-
-			err = json.Unmarshal(body, &feature)
-
-			if err != nil {
-				log.Printf("failed to parse %s, because %s\n", path, err)
-				return err
-			}
-
 			if *exclude_deprecated {
 
 				rsp := gjson.GetBytes(body, "properties.edtf:deprecated")
@@ -129,6 +125,30 @@ func main() {
 						return nil
 					}
 				}
+			}
+
+				if *lieu {
+
+					rsp := gjson.GetBytes(body, "properties.wof:id")
+
+					if !rsp.Exists() {
+						log.Fatal("WOF record is missing a wof:id property", path)
+					}
+
+					source_id := fmt.Sprintf("wof#%d", rsp.Int())
+					body, err = sjson.SetBytes(body, "id", source_id)
+
+					if err != nil {
+						log.Fatal("failed to set source ID for %s, because %s\n", path, err)
+					}
+				}
+
+			var feature interface{}
+			err = json.Unmarshal(body, &feature)
+
+			if err != nil {
+				log.Printf("failed to parse %s, because %s\n", path, err)
+				return err
 			}
 
 			body, err = json.Marshal(feature)

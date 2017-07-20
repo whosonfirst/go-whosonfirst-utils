@@ -1,5 +1,7 @@
 package main
 
+// TO DO: please reconcile with wof-geojsonls-dump.go
+
 // wof-api -param api_key=mapzen-xxxxxx -param method=whosonfirst.places.getDescendants -param placetype=venue -param id=102086957 -geojson-ls -async -paginated --geojson-ls-output /usr/local/data-ext/lacity/wof-venues-lacounty.geojson.txt
 
 // wof-geojsonls-dump-filelist -root /usr/local/data/whosonfirst-data-venue-us-ca/data /usr/local/data-ext/lacity/lacounty-venues.txt > /usr/local/data-ext/lacity/lacounty-venues-geojson.txt
@@ -8,7 +10,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io/ioutil"
 	"log"
@@ -20,8 +24,10 @@ import (
 
 func main() {
 
-	outfile := flag.String("out", "", "Where to write records (default is STDOUT)")
+	outfile := flag.String("outfile", "", "Where to write records (default is STDOUT)")
 	root := flag.String("root", "", "...")
+
+	lieu := flag.Bool("lieu", false, "...")
 	exclude_deprecated := flag.Bool("exclude-deprecated", false, "Exclude records that have been deprecated.")
 	exclude_superseded := flag.Bool("exclude-superseded", false, "Exclude records that have been superseded.")
 
@@ -102,7 +108,7 @@ func main() {
 					throttle <- true
 				}()
 
-				fh, err := os.Open(abs_abs_path)
+				fh, err := os.Open(abs_path)
 
 				if err != nil {
 					// log.Fatal("failed to open %s, because %s\n", abs_path, err)
@@ -115,14 +121,6 @@ func main() {
 
 				if err != nil {
 					log.Fatal("failed to read %s, because %s\n", abs_path, err)
-				}
-
-				var feature interface{}
-
-				err = json.Unmarshal(body, &feature)
-
-				if err != nil {
-					log.Fatal("failed to parse %s, because %s\n", abs_path, err)
 				}
 
 				if *exclude_deprecated {
@@ -151,6 +149,30 @@ func main() {
 							return
 						}
 					}
+				}
+
+				if *lieu {
+
+					rsp := gjson.GetBytes(body, "properties.wof:id")
+
+					if !rsp.Exists() {
+						log.Fatal("WOF record is missing a wof:id property", abs_path)
+					}
+
+					source_id := fmt.Sprintf("wof#%d", rsp.Int())
+					body, err = sjson.SetBytes(body, "id", source_id)
+
+					if err != nil {
+						log.Fatal("failed to set source ID for %s, because %s\n", abs_path, err)
+					}
+				}
+
+				var feature interface{}
+
+				err = json.Unmarshal(body, &feature)
+
+				if err != nil {
+					log.Fatal("failed to parse %s, because %s\n", abs_path, err)
 				}
 
 				body, err = json.Marshal(feature)
