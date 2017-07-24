@@ -28,6 +28,9 @@ func main() {
 	root := flag.String("root", "", "...")
 
 	lieu := flag.Bool("lieu", false, "...")
+
+	exclude_not_current := flag.Bool("exclude-not-current", false, "Exclude records that have been ...")
+	exclude_ceased := flag.Bool("exclude-ceased", false, "Exclude records that have been ...")
 	exclude_deprecated := flag.Bool("exclude-deprecated", false, "Exclude records that have been deprecated.")
 	exclude_superseded := flag.Bool("exclude-superseded", false, "Exclude records that have been superseded.")
 
@@ -101,6 +104,8 @@ func main() {
 
 			wg.Add(1)
 
+			// sudo put this functionality in a package funciton or something...
+
 			go func(abs_abs_path string, wr *bufio.Writer, wg *sync.WaitGroup, throttle chan bool) {
 
 				defer func() {
@@ -123,7 +128,35 @@ func main() {
 					log.Fatal("failed to read %s, because %s\n", abs_path, err)
 				}
 
-				if *exclude_deprecated {
+				if *exclude_not_current {
+
+					rsp := gjson.GetBytes(body, "properties.mz:is_current")
+
+					if rsp.Exists() {
+
+						is_current := rsp.Int()
+
+						if is_current == 0 {
+							return
+						}
+					}
+				}
+
+				if *exclude_ceased || *exclude_not_current {
+
+					rsp := gjson.GetBytes(body, "properties.edtf:cessation")
+
+					if rsp.Exists() {
+
+						cessation := rsp.String()
+
+						if cessation != "" && cessation != "uuuu" {
+							return
+						}
+					}
+				}
+
+				if *exclude_deprecated || *exclude_not_current {
 
 					rsp := gjson.GetBytes(body, "properties.edtf:deprecated")
 
@@ -137,7 +170,7 @@ func main() {
 					}
 				}
 
-				if *exclude_superseded {
+				if *exclude_superseded  || *exclude_not_current {
 
 					rsp := gjson.GetBytes(body, "properties.wof:superseded_by")
 
@@ -159,11 +192,23 @@ func main() {
 						log.Fatal("WOF record is missing a wof:id property", abs_path)
 					}
 
-					source_id := fmt.Sprintf("wof#%d", rsp.Int())
+					source_id := fmt.Sprintf("wof:id=%d", rsp.Int())
 					body, err = sjson.SetBytes(body, "id", source_id)
 
 					if err != nil {
 						log.Fatal("failed to set source ID for %s, because %s\n", abs_path, err)
+					}
+
+					name := gjson.GetBytes(body, "properties.wof:name")
+
+					if !name.Exists() {
+						log.Fatal("WOF record is missing a wof:name property", abs_path)
+					}
+
+					body, err = sjson.SetBytes(body, "properties.name", name.String())
+
+					if err != nil {
+						log.Fatal("failed to set name for %s, because %s\n", abs_path, err)
 					}
 				}
 
